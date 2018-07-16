@@ -123,7 +123,7 @@ fn main() -> io::Result<()> {
         width,
         height,
         None,
-        mux::VideoCodecId::VP8,
+        mux::VideoCodecId::VP9,
     );
 
     // Setup the encoder.
@@ -133,7 +133,6 @@ fn main() -> io::Result<()> {
         height: height,
         timebase: [1, 1000],
         bitrate: args.flag_bitrate,
-        deadline: 1,
     });
 
     // Start recording.

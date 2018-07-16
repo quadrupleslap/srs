@@ -1,20 +1,21 @@
 use std::os::raw::{c_int, c_uint, c_ulong};
 use std::{ptr, slice};
 use vpx_sys::*;
-use self::vpx_codec_cx_pkt_kind::VPX_CODEC_CX_FRAME_PKT;
+use vpx_sys::vp8e_enc_control_id::*;
+use vpx_sys::vpx_codec_cx_pkt_kind::VPX_CODEC_CX_FRAME_PKT;
 
 const ABI_VERSION: c_int = 14;
+const DEADLINE: c_ulong = 1;
 
 pub struct Encoder {
     ctx: vpx_codec_ctx_t,
     width: usize,
     height: usize,
-    deadline: c_ulong,
 }
 
 impl Encoder {
     pub fn new(config: Config) -> Self {
-        let i = unsafe { vpx_codec_vp8_cx() };
+        let i = unsafe { vpx_codec_vp9_cx() };
 
         assert!(config.width % 2 == 0);
         assert!(config.height % 2 == 0);
@@ -28,14 +29,20 @@ impl Encoder {
         c.g_timebase.den = config.timebase[1];
         c.rc_target_bitrate = config.bitrate;
 
+        c.g_threads = 8;
+        c.g_error_resilient = VPX_ERROR_RESILIENT_DEFAULT;
+
         let mut ctx = Default::default();
-        unsafe { vpx_codec_enc_init_ver(&mut ctx, i, &c, 0, ABI_VERSION) }; //TODO: Error.
+        unsafe {
+            vpx_codec_enc_init_ver(&mut ctx, i, &c, 0, ABI_VERSION); //TODO: Error.
+            vpx_codec_control_(&mut ctx, VP8E_SET_CPUUSED as _, 6 as c_int); //TODO: Error.
+            vpx_codec_control_(&mut ctx, VP9E_SET_ROW_MT as _, 1 as c_int); //TODO: Error.
+        }
 
         Self {
             ctx,
             width: config.width as usize,
             height: config.height as usize,
-            deadline: config.deadline,
         }
     }
 
@@ -61,7 +68,7 @@ impl Encoder {
                 pts,
                 1, // Alignment
                 0, // Flags
-                self.deadline,
+                DEADLINE,
             ); //TODO: Error.
         }
 
@@ -79,7 +86,7 @@ impl Encoder {
                 -1, // PTS
                 1, // Alignment
                 0, // Flags
-                self.deadline,
+                DEADLINE,
             ); //TODO: Error.
         }
 
@@ -118,8 +125,6 @@ pub struct Config {
     pub timebase: [c_int; 2],
     /// The target bitrate (in kilobits per second).
     pub bitrate: c_uint,
-    /// The deadline for an encode call (in microseconds; 0 = none).
-    pub deadline: c_ulong,
 }
 
 pub struct Packets<'a> {
@@ -157,7 +162,6 @@ pub struct Finish {
 }
 
 impl Finish {
-    //TODO: The eternal wait for streaming iterators. (v_v)
     pub fn next(&mut self) -> Option<Frame> {
         let mut tmp = Packets {
             ctx: &mut self.enc.ctx,
@@ -175,7 +179,7 @@ impl Finish {
                     -1, // PTS
                     1, // Alignment
                     0, // Flags
-                    self.enc.deadline,
+                    DEADLINE,
                 ); //TODO: Error.
             }
 
