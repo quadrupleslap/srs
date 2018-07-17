@@ -514,6 +514,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "sample"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "scopeguard"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -564,6 +569,7 @@ dependencies = [
  "libvpx-native-sys 4.0.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "opus 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "quest 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "sample 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "scrap 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.70 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.70 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -795,6 +801,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum regex-syntax 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)" = "05b06a75f5217880fc5e905952a42750bf44787e56a6c6d6852ed0992f5e1d54"
 "checksum remove_dir_all 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "3488ba1b9a2084d38645c4c08276a1752dcbf2c7130d74f1569681ad5d2799c5"
 "checksum rpassword 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d127299b02abda51634f14025aec43ae87a7aa7a95202b6a868ec852607d1451"
+"checksum sample 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)" = "cc0966ad788ec7289562643e05c611b7853e0618b7f9306aafd2fc727abfe168"
 "checksum scopeguard 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "94258f53601af11e6a49f722422f6e3425c52b06245a5cf9bc09908b174f5e27"
 "checksum scrap 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "04f3e5e5b3bd8d65b04de768fe0bdbd1e2da0831be9f117e1cc1d71785c9126c"
 "checksum semver-parser 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"

@@ -5,6 +5,7 @@ extern crate crossbeam_channel as channel;
 extern crate docopt;
 extern crate opus;
 extern crate quest;
+extern crate sample;
 extern crate scrap;
 extern crate serde;
 extern crate vpx_sys;
@@ -28,26 +29,27 @@ use webm::mux;
 use webm::mux::Track;
 
 const USAGE: &'static str = "
-Simple recording software!
+Simple WebM screen capture.
 
 Usage:
-  srs <path> [--bitrate=<kbps>] [--fps=<fps>] [--duration=<s>]
+  srs <path> [--time=<s>] [--fps=<fps>] [--bv=<kbps>] [--ba=<kbps>]
   srs (-h | --help)
-  srs --version
 
 Options:
-  -h --help         Show this screen.
-  --bitrate=<kbps>  Target bitrate in kilobits per second [default: 15000].
-  --fps=<fps>       Frames per second [default: 30].
-  --duration=<s>    Recording duration in seconds.
+  -h --help    Show this screen.
+  --time=<s>   Recording duration in seconds.
+  --fps=<fps>  Frames per second [default: 30].
+  --bv=<kbps>  Video bitrate in kilobits per second [default: 5000].
+  --ba=<kbps>  Audio bitrate in kilobits per second [default: 96].
 ";
 
 #[derive(Debug, Deserialize)]
 struct Args {
     arg_path: PathBuf,
-    flag_bitrate: u32,
+    flag_time: Option<u64>,
     flag_fps: u64,
-    flag_duration: Option<u64>,
+    flag_bv: u32,
+    flag_ba: u32,
 }
 
 fn main() -> io::Result<()> {
@@ -55,7 +57,7 @@ fn main() -> io::Result<()> {
         .and_then(|d| d.deserialize())
         .unwrap_or_else(|e| e.exit());
 
-    let duration = args.flag_duration.map(Duration::from_secs);
+    let duration = args.flag_time.map(Duration::from_secs);
 
     // Get the display.
 
@@ -132,15 +134,21 @@ fn main() -> io::Result<()> {
         width: width,
         height: height,
         timebase: [1, 1000],
-        bitrate: args.flag_bitrate,
+        bitrate: args.flag_bv,
     });
 
     // Start recording.
 
+    let start = Instant::now();
     let stop = Arc::new(AtomicBool::new(false));
 
     if let Some(mic) = mic {
-        if let Err(e) = sound::run(&mut webm, stop.clone(), mic) {
+        if let Err(e) = sound::run(
+            stop.clone(),
+            mic,
+            &mut webm,
+            args.flag_ba,
+        ) {
             error(e);
         }
     }
@@ -154,7 +162,6 @@ fn main() -> io::Result<()> {
         }
     });
 
-    let start = Instant::now();
     let spf = Duration::from_nanos(1_000_000_000 / args.flag_fps);
     let mut yuv = Vec::new();
 
