@@ -1,7 +1,10 @@
 [package]
 name = "srs"
-version = "0.1.0"
+description = "WebM screen recorder."
+repository = "https://github.com/quadrupleslap/srs"
 authors = ["Ram Kaniyur <quadrupleslap@gmail.com>"]
+license = "MIT"
+version = "0.1.0"
 
 [dependencies]
 cpal = "0.8"
