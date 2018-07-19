@@ -1,10 +1,10 @@
 use cpal;
 use opus;
-use sample::{interpolate, signal};
 use sample::Signal;
-use std::{error, fmt, thread};
-use std::sync::Arc;
+use sample::{interpolate, signal};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::{error, fmt, thread};
 use webm::mux;
 use webm::mux::Track;
 
@@ -97,28 +97,26 @@ pub fn run<T>(
         });
     }}
 
-    thread::spawn(move || {
-        match fmt.data_type {
-            cpal::SampleFormat::I16 => {
-                main! {
-                    I16;
-                    data => data.iter().cloned();
-                    (i, o) => opus.encode(&i, &mut o).unwrap();
-                }
+    thread::spawn(move || match fmt.data_type {
+        cpal::SampleFormat::I16 => {
+            main! {
+                I16;
+                data => data.iter().cloned();
+                (i, o) => opus.encode(&i, &mut o).unwrap();
             }
-            cpal::SampleFormat::U16 => {
-                main! {
-                    U16;
-                    data => data.iter().map(cpal::Sample::to_i16);
-                    (i, o) => opus.encode(&i, &mut o).unwrap();
-                }
+        }
+        cpal::SampleFormat::U16 => {
+            main! {
+                U16;
+                data => data.iter().map(cpal::Sample::to_i16);
+                (i, o) => opus.encode(&i, &mut o).unwrap();
             }
-            cpal::SampleFormat::F32 => {
-                main! {
-                    F32;
-                    data => data.iter().cloned();
-                    (i, o) => opus.encode_float(&i, &mut o).unwrap();
-                }
+        }
+        cpal::SampleFormat::F32 => {
+            main! {
+                F32;
+                data => data.iter().cloned();
+                (i, o) => opus.encode_float(&i, &mut o).unwrap();
             }
         }
     });
@@ -158,11 +156,9 @@ impl fmt::Display for Error {
             Error::Opus(e) => e.fmt(f),
             Error::StreamCreation(e) => e.fmt(f),
             Error::DefaultFormat(e) => e.fmt(f),
-            Error::BadChannelCount(n) => write!(
-                f,
-                "Expected 1 or 2 channels, but found {} channels.",
-                n,
-            ),
+            Error::BadChannelCount(n) => {
+                write!(f, "Expected 1 or 2 channels, but found {} channels.", n,)
+            }
         }
     }
 }
@@ -192,8 +188,12 @@ struct SendEncoder(pub opus::Encoder);
 unsafe impl Send for SendEncoder {}
 impl ::std::ops::Deref for SendEncoder {
     type Target = opus::Encoder;
-    fn deref(&self) -> &Self::Target { &self.0 }
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 impl ::std::ops::DerefMut for SendEncoder {
-    fn deref_mut(&mut self) -> &mut Self::Target { &mut self.0 }
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
 }

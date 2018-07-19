@@ -1,8 +1,8 @@
 use std::os::raw::{c_int, c_uint, c_ulong};
 use std::{ptr, slice};
-use vpx_sys::*;
 use vpx_sys::vp8e_enc_control_id::*;
 use vpx_sys::vpx_codec_cx_pkt_kind::VPX_CODEC_CX_FRAME_PKT;
+use vpx_sys::*;
 
 const ABI_VERSION: c_int = 14;
 const DEADLINE: c_ulong = 1;
@@ -57,7 +57,7 @@ impl Encoder {
                 self.width as _,
                 self.height as _,
                 1,
-                data.as_ptr() as _
+                data.as_ptr() as _,
             );
         }
 
@@ -84,8 +84,8 @@ impl Encoder {
                 &mut self.ctx,
                 ptr::null(),
                 -1, // PTS
-                1, // Alignment
-                0, // Flags
+                1,  // Alignment
+                0,  // Flags
                 DEADLINE,
             ); //TODO: Error.
         }
@@ -177,8 +177,8 @@ impl Finish {
                     tmp.ctx,
                     ptr::null(),
                     -1, // PTS
-                    1, // Alignment
-                    0, // Flags
+                    1,  // Alignment
+                    0,  // Flags
                     DEADLINE,
                 ); //TODO: Error.
             }

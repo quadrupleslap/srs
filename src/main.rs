@@ -1,4 +1,5 @@
-#[macro_use] extern crate serde_derive;
+#[macro_use]
+extern crate serde_derive;
 
 extern crate cpal;
 extern crate crossbeam_channel as channel;
@@ -17,14 +18,13 @@ mod vpx;
 
 use docopt::Docopt;
 use scrap::{Capturer, Display};
-use std::{io, thread};
 use std::fmt;
-use std::fs::File;
-use std::io::ErrorKind::WouldBlock;
+use std::fs::{File, OpenOptions};
 use std::path::PathBuf;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
+use std::{io, thread};
 use webm::mux;
 use webm::mux::Track;
 
@@ -72,12 +72,9 @@ fn main() -> io::Result<()> {
         let names: Vec<_> = displays
             .iter()
             .enumerate()
-            .map(|(i, display)| format!(
-                "Display {} [{}x{}]",
-                i,
-                display.width(),
-                display.height(),
-            ))
+            .map(
+                |(i, display)| format!("Display {} [{}x{}]", i, display.width(), display.height(),),
+            )
             .collect();
 
         quest::ask("Which display?\n")?;
@@ -117,16 +114,32 @@ fn main() -> io::Result<()> {
 
     // Setup the multiplexer.
 
-    let out = File::create(&args.arg_path)?;
-    let mut webm = mux::Segment::new(mux::Writer::new(out))
-        .expect("Could not initialize the multiplexer.");
+    let out = match {
+        OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&args.arg_path)
+    } {
+        Ok(file) => file,
+        Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => {
+            if loop {
+                quest::ask("Overwrite the existing file? [yN] ")?;
+                if let Some(b) = quest::yesno(false)? {
+                    break b;
+                }
+            } {
+                File::create(&args.arg_path)?
+            } else {
+                return Ok(());
+            }
+        }
+        Err(e) => return Err(e.into()),
+    };
 
-    let mut vt = webm.add_video_track(
-        width,
-        height,
-        None,
-        mux::VideoCodecId::VP9,
-    );
+    let mut webm =
+        mux::Segment::new(mux::Writer::new(out)).expect("Could not initialize the multiplexer.");
+
+    let mut vt = webm.add_video_track(width, height, None, mux::VideoCodecId::VP9);
 
     // Setup the encoder.
 
@@ -143,12 +156,7 @@ fn main() -> io::Result<()> {
     let stop = Arc::new(AtomicBool::new(false));
 
     if let Some(mic) = mic {
-        if let Err(e) = sound::run(
-            stop.clone(),
-            mic,
-            &mut webm,
-            args.flag_ba,
-        ) {
+        if let Err(e) = sound::run(stop.clone(), mic, &mut webm, args.flag_ba) {
             error(e);
         }
     }
@@ -177,22 +185,13 @@ fn main() -> io::Result<()> {
             Ok(frame) => {
                 let ms = time.as_secs() * 1000 + time.subsec_millis() as u64;
 
-                convert::argb_to_i420(
-                    width as usize,
-                    height as usize,
-                    &frame,
-                    &mut yuv,
-                );
+                convert::argb_to_i420(width as usize, height as usize, &frame, &mut yuv);
 
                 for frame in vpx.encode(ms as i64, &yuv) {
-                    vt.add_frame(
-                        frame.data,
-                        frame.pts as u64 * 1_000_000,
-                        frame.key,
-                    );
+                    vt.add_frame(frame.data, frame.pts as u64 * 1_000_000, frame.key);
                 }
             }
-            Err(ref e) if e.kind() == WouldBlock => {
+            Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
                 // Wait.
             }
             Err(e) => {
@@ -211,11 +210,7 @@ fn main() -> io::Result<()> {
 
     let mut frames = vpx.finish();
     while let Some(frame) = frames.next() {
-        vt.add_frame(
-            frame.data,
-            frame.pts as u64 * 1_000_000,
-            frame.key,
-        );
+        vt.add_frame(frame.data, frame.pts as u64 * 1_000_000, frame.key);
     }
 
     let _ = webm.finalize(None);
