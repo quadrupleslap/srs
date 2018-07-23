@@ -123,7 +123,7 @@ fn main() -> io::Result<()> {
         Ok(file) => file,
         Err(ref e) if e.kind() == io::ErrorKind::AlreadyExists => {
             if loop {
-                quest::ask("Overwrite the existing file? [yN] ")?;
+                quest::ask("Overwrite the existing file? [y/N] ")?;
                 if let Some(b) = quest::yesno(false)? {
                     break b;
                 }
